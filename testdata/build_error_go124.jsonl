@@ -1,0 +1,6 @@
+{"ImportPath":"example.com/broken [example.com/broken.test]","Action":"build-output","Output":"# example.com/broken [example.com/broken.test]\n"}
+{"ImportPath":"example.com/broken [example.com/broken.test]","Action":"build-output","Output":"./broken.go:3:30: undefined: DoesNotExist\n"}
+{"ImportPath":"example.com/broken [example.com/broken.test]","Action":"build-fail"}
+{"Time":"2026-01-01T00:00:00Z","Action":"start","Package":"example.com/broken"}
+{"Time":"2026-01-01T00:00:00Z","Action":"output","Package":"example.com/broken","Output":"FAIL\texample.com/broken [build failed]\n"}
+{"Time":"2026-01-01T00:00:00Z","Action":"fail","Package":"example.com/broken","Elapsed":0,"FailedBuild":"example.com/broken [example.com/broken.test]"}

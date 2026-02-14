@@ -186,6 +186,21 @@ func TestParse_DataRace(t *testing.T) {
 	require.Contains(t, output, "DATA RACE")
 }
 
+func TestParse_BuildErrorGo124(t *testing.T) {
+	results, err := testjson.Parse(openFixture(t, "build_error_go124.jsonl"))
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+
+	pkg := results[0]
+	require.Equal(t, "example.com/broken", pkg.Package)
+	require.True(t, pkg.BuildFailed)
+	require.Equal(t, 0, pkg.TotalCount())
+
+	// Build error output should include the compiler error from build-output events.
+	output := strings.Join(pkg.Output, "")
+	require.Contains(t, output, "undefined: DoesNotExist")
+}
+
 func TestParse_NonJSONLines(t *testing.T) {
 	input := strings.NewReader(`not json at all
 {"Action":"start","Package":"example.com/x"}

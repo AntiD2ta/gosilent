@@ -75,6 +75,11 @@ func Parse(r io.Reader) ([]*PackageResult, error) {
 		}
 
 		pkg := event.Package
+		if pkg == "" && event.ImportPath != "" {
+			// Go 1.24+ emits build-output/build-fail events with ImportPath
+			// instead of Package. Derive the package name from the import path.
+			pkg = strings.SplitN(event.ImportPath, " ", 2)[0]
+		}
 		if pkg == "" {
 			continue
 		}
@@ -129,6 +134,9 @@ func Parse(r io.Reader) ([]*PackageResult, error) {
 				results = append(results, b.finalize(event.Elapsed))
 				delete(builders, pkg)
 			}
+
+		case ActionBuildOutput:
+			b.output = append(b.output, event.Output)
 		}
 	}
 
