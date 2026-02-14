@@ -1,0 +1,17 @@
+{"Time":"2024-01-01T00:00:00Z","Action":"start","Package":"example.com/sub"}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/sub","Test":"TestMath"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/sub","Test":"TestMath","Output":"=== RUN   TestMath\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/sub","Test":"TestMath/Add"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/sub","Test":"TestMath/Add","Output":"=== RUN   TestMath/Add\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/sub","Test":"TestMath/Add","Output":"--- PASS: TestMath/Add (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"pass","Package":"example.com/sub","Test":"TestMath/Add","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/sub","Test":"TestMath/Div"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/sub","Test":"TestMath/Div","Output":"=== RUN   TestMath/Div\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/sub","Test":"TestMath/Div","Output":"    math_test.go:25: division by zero\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/sub","Test":"TestMath/Div","Output":"--- FAIL: TestMath/Div (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"fail","Package":"example.com/sub","Test":"TestMath/Div","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/sub","Test":"TestMath","Output":"--- FAIL: TestMath (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"fail","Package":"example.com/sub","Test":"TestMath","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/sub","Output":"FAIL\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/sub","Output":"FAIL\texample.com/sub\t1.200s\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"fail","Package":"example.com/sub","Elapsed":1.2}

@@ -1,0 +1,8 @@
+{"Time":"2024-01-01T00:00:00Z","Action":"start","Package":"example.com/fast"}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/fast","Test":"TestQuick"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/fast","Test":"TestQuick","Output":"=== RUN   TestQuick\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/fast","Test":"TestQuick","Output":"--- PASS: TestQuick (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"pass","Package":"example.com/fast","Test":"TestQuick","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/fast","Output":"PASS\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/fast","Output":"ok  \texample.com/fast\t(cached)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"pass","Package":"example.com/fast","Elapsed":0}

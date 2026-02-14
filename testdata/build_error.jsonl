@@ -1,0 +1,5 @@
+{"Time":"2024-01-01T00:00:00Z","Action":"start","Package":"example.com/broken"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/broken","Output":"# example.com/broken\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/broken","Output":"./foo.go:10:5: undefined: DoesNotExist\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/broken","Output":"FAIL\texample.com/broken [build failed]\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"fail","Package":"example.com/broken","Elapsed":0}

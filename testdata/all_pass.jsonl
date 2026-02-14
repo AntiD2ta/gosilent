@@ -1,0 +1,12 @@
+{"Time":"2024-01-01T00:00:00Z","Action":"start","Package":"example.com/foo"}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/foo","Test":"TestAdd"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/foo","Test":"TestAdd","Output":"=== RUN   TestAdd\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/foo","Test":"TestAdd","Output":"--- PASS: TestAdd (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"pass","Package":"example.com/foo","Test":"TestAdd","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/foo","Test":"TestSub"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/foo","Test":"TestSub","Output":"=== RUN   TestSub\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/foo","Test":"TestSub","Output":"--- PASS: TestSub (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"pass","Package":"example.com/foo","Test":"TestSub","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/foo","Output":"PASS\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/foo","Output":"ok  \texample.com/foo\t3.456s\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"pass","Package":"example.com/foo","Elapsed":3.456}

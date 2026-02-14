@@ -1,0 +1,13 @@
+{"Time":"2024-01-01T00:00:00Z","Action":"start","Package":"example.com/racy"}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/racy","Test":"TestRacy"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/racy","Test":"TestRacy","Output":"=== RUN   TestRacy\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/racy","Test":"TestRacy","Output":"==================\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/racy","Test":"TestRacy","Output":"WARNING: DATA RACE\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/racy","Test":"TestRacy","Output":"Write at 0x00c000014088 by goroutine 7:\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/racy","Test":"TestRacy","Output":"  racy_test.go:15 +0x64\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/racy","Test":"TestRacy","Output":"==================\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/racy","Test":"TestRacy","Output":"--- FAIL: TestRacy (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"fail","Package":"example.com/racy","Test":"TestRacy","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/racy","Output":"FAIL\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/racy","Output":"FAIL\texample.com/racy\t1.000s\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"fail","Package":"example.com/racy","Elapsed":1}

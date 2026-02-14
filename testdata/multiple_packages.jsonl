@@ -1,0 +1,20 @@
+{"Time":"2024-01-01T00:00:00Z","Action":"start","Package":"example.com/alpha"}
+{"Time":"2024-01-01T00:00:00Z","Action":"start","Package":"example.com/beta"}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/alpha","Test":"TestOne"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/alpha","Test":"TestOne","Output":"=== RUN   TestOne\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/beta","Test":"TestSingle"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/beta","Test":"TestSingle","Output":"=== RUN   TestSingle\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/alpha","Test":"TestOne","Output":"--- PASS: TestOne (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"pass","Package":"example.com/alpha","Test":"TestOne","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/beta","Test":"TestSingle","Output":"--- PASS: TestSingle (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"pass","Package":"example.com/beta","Test":"TestSingle","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/alpha","Test":"TestTwo"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/alpha","Test":"TestTwo","Output":"=== RUN   TestTwo\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/alpha","Test":"TestTwo","Output":"--- PASS: TestTwo (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"pass","Package":"example.com/alpha","Test":"TestTwo","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/beta","Output":"PASS\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/beta","Output":"ok  \texample.com/beta\t0.800s\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"pass","Package":"example.com/beta","Elapsed":0.8}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/alpha","Output":"PASS\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/alpha","Output":"ok  \texample.com/alpha\t1.500s\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"pass","Package":"example.com/alpha","Elapsed":1.5}

@@ -32,6 +32,10 @@ go.work.sum
 # .vscode/
 
 INSIGHTS.md
+PLAN.md
+PROMPT.md
 
 # Built binary
 gosilent
+
+.serena/

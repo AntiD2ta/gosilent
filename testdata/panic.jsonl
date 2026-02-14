@@ -1,0 +1,14 @@
+{"Time":"2024-01-01T00:00:00Z","Action":"start","Package":"example.com/panicky"}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/panicky","Test":"TestPanic"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/panicky","Test":"TestPanic","Output":"=== RUN   TestPanic\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/panicky","Test":"TestPanic","Output":"--- FAIL: TestPanic (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/panicky","Test":"TestPanic","Output":"panic: runtime error: index out of range [5] with length 3 [recovered]\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/panicky","Test":"TestPanic","Output":"\tpanic: runtime error: index out of range [5] with length 3\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/panicky","Test":"TestPanic","Output":"\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/panicky","Test":"TestPanic","Output":"goroutine 6 [running]:\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/panicky","Test":"TestPanic","Output":"testing.tRunner.func1.2({0x104b9e860, 0x140000181f8})\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/panicky","Test":"TestPanic","Output":"\t/usr/local/go/src/testing/testing.go:1632 +0x1bc\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"fail","Package":"example.com/panicky","Test":"TestPanic","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/panicky","Output":"FAIL\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/panicky","Output":"FAIL\texample.com/panicky\t0.500s\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"fail","Package":"example.com/panicky","Elapsed":0.5}

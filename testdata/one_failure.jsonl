@@ -1,0 +1,13 @@
+{"Time":"2024-01-01T00:00:00Z","Action":"start","Package":"example.com/bar"}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/bar","Test":"TestOK"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/bar","Test":"TestOK","Output":"=== RUN   TestOK\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/bar","Test":"TestOK","Output":"--- PASS: TestOK (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"pass","Package":"example.com/bar","Test":"TestOK","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"run","Package":"example.com/bar","Test":"TestBroken"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/bar","Test":"TestBroken","Output":"=== RUN   TestBroken\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/bar","Test":"TestBroken","Output":"    bar_test.go:15: expected 3, got 5\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/bar","Test":"TestBroken","Output":"--- FAIL: TestBroken (0.00s)\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"fail","Package":"example.com/bar","Test":"TestBroken","Elapsed":0}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/bar","Output":"FAIL\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"output","Package":"example.com/bar","Output":"FAIL\texample.com/bar\t2.100s\n"}
+{"Time":"2024-01-01T00:00:00Z","Action":"fail","Package":"example.com/bar","Elapsed":2.1}
