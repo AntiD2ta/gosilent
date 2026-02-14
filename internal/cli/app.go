@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 
+	"github.com/AntiD2ta/gosilent/internal/testcmd"
 	"github.com/urfave/cli/v2"
 )
 
@@ -12,6 +13,7 @@ func NewApp(version string) *cli.App {
 		Name:  "gosilent",
 		Usage: "Context-efficient test runner for AI agents",
 		Commands: []*cli.Command{
+			testcmd.Command(),
 			{
 				Name:  "version",
 				Usage: "Print the version",

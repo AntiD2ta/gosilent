@@ -29,6 +29,20 @@ func TestNewApp(t *testing.T) {
 			},
 		},
 		{
+			name: "HasTestCommand",
+			verify: func(t *testing.T, app *ucli.App) {
+				t.Helper()
+				found := false
+				for _, cmd := range app.Commands {
+					if cmd.Name == "test" {
+						found = true
+						break
+					}
+				}
+				require.True(t, found, "app should have a 'test' command")
+			},
+		},
+		{
 			name: "AppName",
 			verify: func(t *testing.T, app *ucli.App) {
 				t.Helper()
