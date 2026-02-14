@@ -25,5 +25,5 @@ type TestEvent struct {
 // IsPackageLevel reports whether this event applies to the package as a whole
 // (not a specific test).
 func (e TestEvent) IsPackageLevel() bool {
-	return false
+	return e.Test == ""
 }
