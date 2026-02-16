@@ -20,7 +20,7 @@ func (r *Result) Wait() error {
 // Run starts the named command with the given arguments and returns a Result
 // whose Stdout can be consumed while the process is still running.
 func Run(ctx context.Context, name string, args ...string) (*Result, error) {
-	cmd := exec.CommandContext(ctx, name, args...)
+	cmd := exec.CommandContext(ctx, name, args...) // #nosec G204 -- gosilent intentionally executes subprocess (go test)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err

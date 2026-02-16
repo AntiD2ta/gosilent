@@ -18,7 +18,7 @@ func NewApp(version string) *cli.App {
 				Name:  "version",
 				Usage: "Print the version",
 				Action: func(c *cli.Context) error {
-					fmt.Fprintf(c.App.Writer, "gosilent %s\n", version)
+					_, _ = fmt.Fprintf(c.App.Writer, "gosilent %s\n", version)
 					return nil
 				},
 			},

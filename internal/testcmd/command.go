@@ -62,11 +62,10 @@ func Command() *cli.Command {
 
 // runVerbose passes go test output through without JSON parsing.
 func runVerbose(w io.Writer, result *runner.Result) error {
-	io.Copy(w, result.Stdout)
+	_, _ = io.Copy(w, result.Stdout)
 	waitErr := result.Wait()
 	// Propagate exit code from go test.
-	var exitErr *exec.ExitError
-	if errors.As(waitErr, &exitErr) {
+	if exitErr, ok := errors.AsType[*exec.ExitError](waitErr); ok {
 		return cli.Exit("", exitErr.ExitCode())
 	}
 	return waitErr
@@ -81,7 +80,7 @@ func runJSON(w io.Writer, result *runner.Result) error {
 		return fmt.Errorf("failed to parse test output: %w", parseErr)
 	}
 
-	fmt.Fprint(w, formatter.Format(results))
+	_, _ = fmt.Fprint(w, formatter.Format(results))
 
 	if formatter.HasFailures(results) {
 		return cli.Exit("", 1)

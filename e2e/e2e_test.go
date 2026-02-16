@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "failed to create temp dir: %v\n", err)
 		os.Exit(1)
 	}
-	defer os.RemoveAll(tmp)
+	defer func() { _ = os.RemoveAll(tmp) }()
 
 	binaryPath = filepath.Join(tmp, "gosilent")
 	build := exec.Command("go", "build", "-o", binaryPath, "./cmd/gosilent/")
@@ -144,7 +144,7 @@ func TestE2E_SelfTest(t *testing.T) {
 	}
 
 	// No FAIL lines.
-	for _, line := range strings.Split(stdout, "\n") {
+	for line := range strings.SplitSeq(stdout, "\n") {
 		require.False(t, strings.HasPrefix(line, "FAIL"), "should have no FAIL lines, got: %s", line)
 	}
 
