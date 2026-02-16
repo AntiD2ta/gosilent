@@ -165,8 +165,8 @@ func TestFormat_SinglePass_Compact(t *testing.T) {
 		},
 	}
 
-	got := formatter.Format(results)
-	require.Equal(t, "ok  all packages (2 tests, 3.46s)\n", got)
+	got := formatter.Format(results, nil)
+	require.Equal(t, "ok  foo (2 tests, 3.46s)\n", got)
 }
 
 func TestFormat_SingleFailure_Compact(t *testing.T) {
@@ -190,7 +190,7 @@ func TestFormat_SingleFailure_Compact(t *testing.T) {
 		},
 	}
 
-	got := formatter.Format(results)
+	got := formatter.Format(results, nil)
 	expected := "FAIL  example.com/bar\n" +
 		"  TestBroken\n" +
 		"    bar_test.go:15: expected 3, got 5\n" +
@@ -222,7 +222,7 @@ func TestFormat_MultiPass_Compact(t *testing.T) {
 		},
 	}
 
-	got := formatter.Format(results)
+	got := formatter.Format(results, nil)
 	require.Equal(t, "ok  all packages (5 tests, 4.96s)\n", got)
 }
 
@@ -235,7 +235,7 @@ func TestFormat_NoTestFiles_Compact(t *testing.T) {
 		},
 	}
 
-	got := formatter.Format(results)
+	got := formatter.Format(results, nil)
 	require.Equal(t, "ok  all packages (0 tests, 0.00s)\n", got)
 }
 
@@ -282,7 +282,7 @@ func TestFormat_Mixed_Compact(t *testing.T) {
 		},
 	}
 
-	got := formatter.Format(results)
+	got := formatter.Format(results, nil)
 	expected := "FAIL  example.com/b\n" +
 		"  TestB2\n" +
 		"    b_test.go:10: wrong answer\n" +
@@ -303,7 +303,7 @@ func TestFormat_BuildFailure_Compact(t *testing.T) {
 		},
 	}
 
-	got := formatter.Format(results)
+	got := formatter.Format(results, nil)
 	expected := "FAIL  example.com/broken [build failed]\n" +
 		"  ./foo.go:10:5: undefined: DoesNotExist\n" +
 		"\n" +
@@ -325,8 +325,114 @@ func TestFormat_PassWithSkips_Compact(t *testing.T) {
 		},
 	}
 
-	got := formatter.Format(results)
-	require.Equal(t, "ok  all packages (3 tests, 3.45s)\n", got)
+	got := formatter.Format(results, nil)
+	require.Equal(t, "ok  foo (3 tests, 3.45s)\n", got)
+}
+
+func TestFormat_WithFlags_Compact(t *testing.T) {
+	tests := []struct {
+		name     string
+		results  []*testjson.PackageResult
+		flags    []string
+		expected string
+	}{
+		{
+			name: "SinglePkgWithRace",
+			results: []*testjson.PackageResult{
+				{
+					Package:       "example.com/foo",
+					Elapsed:       3.46,
+					PackageAction: testjson.ActionPass,
+					Tests: []*testjson.TestResult{
+						{Name: "TestOne", Status: testjson.StatusPass},
+					},
+				},
+			},
+			flags:    []string{"-race"},
+			expected: "ok  foo -race (1 tests, 3.46s)\n",
+		},
+		{
+			name: "MultiPkgWithRace",
+			results: []*testjson.PackageResult{
+				{
+					Package:       "example.com/a",
+					Elapsed:       1.50,
+					PackageAction: testjson.ActionPass,
+					Tests: []*testjson.TestResult{
+						{Name: "TestA1", Status: testjson.StatusPass},
+					},
+				},
+				{
+					Package:       "example.com/b",
+					Elapsed:       2.00,
+					PackageAction: testjson.ActionPass,
+					Tests: []*testjson.TestResult{
+						{Name: "TestB1", Status: testjson.StatusPass},
+					},
+				},
+			},
+			flags:    []string{"-race"},
+			expected: "ok  all packages -race (2 tests, 3.50s)\n",
+		},
+		{
+			name: "MultipleFlags",
+			results: []*testjson.PackageResult{
+				{
+					Package:       "example.com/foo",
+					Elapsed:       0.50,
+					PackageAction: testjson.ActionPass,
+					Tests: []*testjson.TestResult{
+						{Name: "TestOne", Status: testjson.StatusPass},
+					},
+				},
+			},
+			flags:    []string{"-race", "-tags integration"},
+			expected: "ok  foo -race -tags integration (1 tests, 0.50s)\n",
+		},
+		{
+			name: "FailureWithFlags",
+			results: []*testjson.PackageResult{
+				{
+					Package:       "example.com/bar",
+					Elapsed:       2.10,
+					PackageAction: testjson.ActionFail,
+					Tests: []*testjson.TestResult{
+						{Name: "TestGood", Status: testjson.StatusPass},
+						{
+							Name:   "TestBroken",
+							Status: testjson.StatusFail,
+							Output: []string{
+								"=== RUN   TestBroken\n",
+								"    bar_test.go:15: expected 3, got 5\n",
+								"--- FAIL: TestBroken (0.00s)\n",
+							},
+						},
+					},
+				},
+				{
+					Package:       "example.com/ok",
+					Elapsed:       1.00,
+					PackageAction: testjson.ActionPass,
+					Tests: []*testjson.TestResult{
+						{Name: "TestOk", Status: testjson.StatusPass},
+					},
+				},
+			},
+			flags: []string{"-race"},
+			expected: "FAIL  example.com/bar\n" +
+				"  TestBroken\n" +
+				"    bar_test.go:15: expected 3, got 5\n" +
+				"\n" +
+				"1 failed, 1 passed -race (3 tests, 3.10s)\n",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := formatter.Format(test.results, test.flags)
+			require.Equal(t, test.expected, got)
+		})
+	}
 }
 
 func TestHasFailures(t *testing.T) {

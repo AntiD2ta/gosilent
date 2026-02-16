@@ -2,6 +2,7 @@ package formatter
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/AntiD2ta/gosilent/internal/testjson"
@@ -29,13 +30,37 @@ func aggregateStats(results []*testjson.PackageResult) compactStats {
 	return s
 }
 
+// packageIdentifier returns the display name for the test run.
+// Single non-NoTestFiles package → last path segment; otherwise "all packages".
+func packageIdentifier(results []*testjson.PackageResult) string {
+	var activePkg string
+	activeCount := 0
+	for _, pkg := range results {
+		if !pkg.NoTestFiles {
+			activePkg = pkg.Package
+			activeCount++
+		}
+	}
+	if activeCount == 1 {
+		return path.Base(activePkg)
+	}
+	return "all packages"
+}
+
 // Format renders results as ultra-compact output: a single line on success,
-// failure details only on failure.
-func Format(results []*testjson.PackageResult) string {
+// failure details only on failure. The flags parameter contains significant
+// test flags (e.g., "-race", "-tags integration") to display in the output.
+func Format(results []*testjson.PackageResult, flags []string) string {
 	s := aggregateStats(results)
+	identifier := packageIdentifier(results)
+
+	var flagsSuffix string
+	if len(flags) > 0 {
+		flagsSuffix = " " + strings.Join(flags, " ")
+	}
 
 	if len(s.failedPkgs) == 0 {
-		return fmt.Sprintf("ok  all packages (%d tests, %.2fs)\n", s.totalTests, s.totalElapsed)
+		return fmt.Sprintf("ok  %s%s (%d tests, %.2fs)\n", identifier, flagsSuffix, s.totalTests, s.totalElapsed)
 	}
 
 	var b strings.Builder
@@ -55,8 +80,8 @@ func Format(results []*testjson.PackageResult) string {
 	if passedPkgs > 0 {
 		parts = append(parts, fmt.Sprintf("%d passed", passedPkgs))
 	}
-	_, _ = fmt.Fprintf(&b, "%s (%d tests, %.2fs)\n",
-		strings.Join(parts, ", "), s.totalTests, s.totalElapsed)
+	_, _ = fmt.Fprintf(&b, "%s%s (%d tests, %.2fs)\n",
+		strings.Join(parts, ", "), flagsSuffix, s.totalTests, s.totalElapsed)
 
 	return b.String()
 }
