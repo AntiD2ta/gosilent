@@ -30,6 +30,7 @@ func TestParse_AllPass(t *testing.T) {
 	require.Equal(t, 2, pkg.TotalCount())
 	require.Equal(t, 2, pkg.PassCount())
 	require.Equal(t, 0, pkg.FailCount())
+	require.Equal(t, testjson.ActionPass, pkg.PackageAction)
 }
 
 func TestParse_OneFailure(t *testing.T) {
@@ -44,6 +45,8 @@ func TestParse_OneFailure(t *testing.T) {
 	require.Equal(t, 2, pkg.TotalCount())
 	require.Equal(t, 1, pkg.PassCount())
 	require.Equal(t, 1, pkg.FailCount())
+
+	require.Equal(t, testjson.ActionFail, pkg.PackageAction)
 
 	failed := pkg.FailedTests()
 	require.Len(t, failed, 1)
@@ -64,6 +67,7 @@ func TestParse_WithSubtests(t *testing.T) {
 	require.Equal(t, 2, pkg.TotalCount())
 	require.Equal(t, 1, pkg.PassCount())
 	require.Equal(t, 1, pkg.FailCount())
+	require.Equal(t, testjson.ActionFail, pkg.PackageAction)
 
 	failed := pkg.FailedTests()
 	require.Len(t, failed, 1)
@@ -80,6 +84,7 @@ func TestParse_BuildError(t *testing.T) {
 	require.Equal(t, "example.com/broken", pkg.Package)
 	require.True(t, pkg.BuildFailed)
 	require.Equal(t, 0, pkg.TotalCount())
+	require.Equal(t, testjson.ActionFail, pkg.PackageAction)
 
 	// Build error output should be captured in package-level output.
 	require.Contains(t, pkg.Output, "./foo.go:10:5: undefined: DoesNotExist\n")
@@ -94,6 +99,7 @@ func TestParse_NoTestFiles(t *testing.T) {
 	require.Equal(t, "example.com/notests", pkg.Package)
 	require.True(t, pkg.NoTestFiles)
 	require.Equal(t, 0, pkg.TotalCount())
+	require.Equal(t, testjson.ActionSkip, pkg.PackageAction)
 }
 
 func TestParse_MultiplePackages(t *testing.T) {
@@ -121,10 +127,12 @@ func TestParse_MultiplePackages(t *testing.T) {
 	require.Equal(t, 1.5, alpha.Elapsed)
 	require.Equal(t, 2, alpha.TotalCount())
 	require.Equal(t, 2, alpha.PassCount())
+	require.Equal(t, testjson.ActionPass, alpha.PackageAction)
 
 	require.Equal(t, 0.8, beta.Elapsed)
 	require.Equal(t, 1, beta.TotalCount())
 	require.Equal(t, 1, beta.PassCount())
+	require.Equal(t, testjson.ActionPass, beta.PackageAction)
 }
 
 func TestParse_SkippedTests(t *testing.T) {
@@ -138,6 +146,7 @@ func TestParse_SkippedTests(t *testing.T) {
 	require.Equal(t, 2, pkg.PassCount())
 	require.Equal(t, 1, pkg.SkipCount())
 	require.Equal(t, 0, pkg.FailCount())
+	require.Equal(t, testjson.ActionPass, pkg.PackageAction)
 }
 
 func TestParse_Cached(t *testing.T) {
@@ -149,6 +158,7 @@ func TestParse_Cached(t *testing.T) {
 	require.Equal(t, "example.com/fast", pkg.Package)
 	require.Equal(t, 1, pkg.TotalCount())
 	require.Equal(t, 1, pkg.PassCount())
+	require.Equal(t, testjson.ActionPass, pkg.PackageAction)
 }
 
 func TestParse_Panic(t *testing.T) {
@@ -165,6 +175,8 @@ func TestParse_Panic(t *testing.T) {
 	require.Len(t, failed, 1)
 	require.Equal(t, "TestPanic", failed[0].Name)
 
+	require.Equal(t, testjson.ActionFail, pkg.PackageAction)
+
 	// Panic output should be captured.
 	output := strings.Join(failed[0].Output, "")
 	require.Contains(t, output, "panic: runtime error")
@@ -179,6 +191,8 @@ func TestParse_DataRace(t *testing.T) {
 	require.Equal(t, "example.com/racy", pkg.Package)
 	require.Equal(t, 1, pkg.TotalCount())
 	require.Equal(t, 1, pkg.FailCount())
+
+	require.Equal(t, testjson.ActionFail, pkg.PackageAction)
 
 	failed := pkg.FailedTests()
 	require.Len(t, failed, 1)
@@ -195,6 +209,8 @@ func TestParse_BuildErrorGo124(t *testing.T) {
 	require.Equal(t, "example.com/broken", pkg.Package)
 	require.True(t, pkg.BuildFailed)
 	require.Equal(t, 0, pkg.TotalCount())
+
+	require.Equal(t, testjson.ActionFail, pkg.PackageAction)
 
 	// Build error output should include the compiler error from build-output events.
 	output := strings.Join(pkg.Output, "")
@@ -221,4 +237,5 @@ also not json
 	require.Equal(t, "example.com/x", pkg.Package)
 	require.Equal(t, 1, pkg.TotalCount())
 	require.Equal(t, 1, pkg.PassCount())
+	require.Equal(t, testjson.ActionPass, pkg.PackageAction)
 }

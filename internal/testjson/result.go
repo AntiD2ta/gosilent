@@ -20,12 +20,13 @@ type TestResult struct {
 
 // PackageResult holds the aggregated results for a single package.
 type PackageResult struct {
-	Package    string
-	Elapsed    float64
-	Tests      []*TestResult
-	Output     []string // package-level output (build errors, etc.)
-	NoTestFiles bool
-	BuildFailed bool
+	Package       string
+	Elapsed       float64
+	Tests         []*TestResult
+	Output        []string // package-level output (build errors, etc.)
+	NoTestFiles   bool
+	BuildFailed   bool
+	PackageAction Action // package-level verdict from go test -json (pass/fail/skip)
 }
 
 // LeafTests returns only the leaf tests (tests that are not parents of subtests).

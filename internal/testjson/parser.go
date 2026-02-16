@@ -29,11 +29,12 @@ func (b *packageBuilder) addTest(name string) {
 	}
 }
 
-func (b *packageBuilder) finalize(elapsed float64) *PackageResult {
+func (b *packageBuilder) finalize(elapsed float64, action Action) *PackageResult {
 	result := &PackageResult{
-		Package: b.pkg,
-		Elapsed: elapsed,
-		Output:  b.output,
+		Package:       b.pkg,
+		Elapsed:       elapsed,
+		Output:        b.output,
+		PackageAction: action,
 	}
 
 	for _, name := range b.order {
@@ -111,7 +112,7 @@ func Parse(r io.Reader) ([]*PackageResult, error) {
 				b.tests[event.Test].Status = StatusPass
 			} else {
 				// Package-level pass: finalize.
-				results = append(results, b.finalize(event.Elapsed))
+				results = append(results, b.finalize(event.Elapsed, ActionPass))
 				delete(builders, pkg)
 			}
 
@@ -121,7 +122,7 @@ func Parse(r io.Reader) ([]*PackageResult, error) {
 				b.tests[event.Test].Status = StatusFail
 			} else {
 				// Package-level fail: finalize.
-				results = append(results, b.finalize(event.Elapsed))
+				results = append(results, b.finalize(event.Elapsed, ActionFail))
 				delete(builders, pkg)
 			}
 
@@ -131,7 +132,7 @@ func Parse(r io.Reader) ([]*PackageResult, error) {
 				b.tests[event.Test].Status = StatusSkip
 			} else {
 				// Package-level skip: finalize.
-				results = append(results, b.finalize(event.Elapsed))
+				results = append(results, b.finalize(event.Elapsed, ActionSkip))
 				delete(builders, pkg)
 			}
 
