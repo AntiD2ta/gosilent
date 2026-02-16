@@ -12,6 +12,7 @@ func TestBuildArgs(t *testing.T) {
 		args        []string
 		wantArgs    []string
 		wantVerbose bool
+		wantDetail  bool
 		wantFlags   []string
 	}{
 		{
@@ -119,13 +120,34 @@ func TestBuildArgs(t *testing.T) {
 			wantArgs:  []string{"test", "-json", "-race", "-short", "-tags=integration", "./..."},
 			wantFlags: []string{"-race", "-short", "-tags integration"},
 		},
+		{
+			name:       "DetailMode",
+			args:       []string{"--detail", "./..."},
+			wantArgs:   []string{"test", "-json", "./..."},
+			wantDetail: true,
+		},
+		{
+			name:       "DetailModeWithFlags",
+			args:       []string{"-race", "--detail", "./pkg/"},
+			wantArgs:   []string{"test", "-json", "-race", "./pkg/"},
+			wantDetail: true,
+			wantFlags:  []string{"-race"},
+		},
+		{
+			name:        "DetailAndVerbose",
+			args:        []string{"--detail", "--verbose", "./..."},
+			wantArgs:    []string{"test", "./..."},
+			wantVerbose: true,
+			wantDetail:  true,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			gotArgs, gotVerbose, gotFlags := buildArgs(test.args)
+			gotArgs, gotVerbose, gotDetail, gotFlags := buildArgs(test.args)
 			require.Equal(t, test.wantArgs, gotArgs)
 			require.Equal(t, test.wantVerbose, gotVerbose)
+			require.Equal(t, test.wantDetail, gotDetail)
 			require.Equal(t, test.wantFlags, gotFlags)
 		})
 	}

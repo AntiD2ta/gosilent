@@ -28,16 +28,20 @@ var significantValueFlags = map[string]bool{
 
 // buildArgs constructs the arguments for 'go test' from the raw args
 // passed after 'gosilent test'. It returns the full go args slice,
-// whether --verbose mode was requested, and any significant flags
-// extracted for display in the output.
-func buildArgs(args []string) (goArgs []string, verbose bool, flags []string) {
-	// Scan args for --verbose (strip it), -json (detect it), and significant flags.
+// whether --verbose mode was requested, whether --detail mode was
+// requested, and any significant flags extracted for display in the output.
+func buildArgs(args []string) (goArgs []string, verbose bool, detail bool, flags []string) {
+	// Scan args for --verbose, --detail (strip them), -json (detect it), and significant flags.
 	var filtered []string
 	hasJSON := false
 	for i := range args {
 		arg := args[i]
 		if arg == "--verbose" {
 			verbose = true
+			continue
+		}
+		if arg == "--detail" {
+			detail = true
 			continue
 		}
 		if arg == "-json" {
@@ -71,7 +75,7 @@ func buildArgs(args []string) (goArgs []string, verbose bool, flags []string) {
 		goArgs = append(goArgs, "-json")
 	}
 	goArgs = append(goArgs, filtered...)
-	return goArgs, verbose, flags
+	return goArgs, verbose, detail, flags
 }
 
 // Command returns the "test" subcommand for the gosilent CLI.
@@ -81,7 +85,7 @@ func Command() *cli.Command {
 		Usage:           "Run go test with compact output",
 		SkipFlagParsing: true,
 		Action: func(c *cli.Context) error {
-			goArgs, verbose, flags := buildArgs(c.Args().Slice())
+			goArgs, verbose, detail, flags := buildArgs(c.Args().Slice())
 
 			result, err := runner.Run(c.Context, "go", goArgs...)
 			if err != nil {
@@ -91,7 +95,7 @@ func Command() *cli.Command {
 			if verbose {
 				return runVerbose(c.App.Writer, result)
 			}
-			return runJSON(c.App.Writer, result, flags)
+			return runJSON(c.App.Writer, result, detail, flags)
 		},
 	}
 }
@@ -107,8 +111,10 @@ func runVerbose(w io.Writer, result *runner.Result) error {
 	return waitErr
 }
 
-// runJSON parses JSON output and formats compact results.
-func runJSON(w io.Writer, result *runner.Result, flags []string) error {
+// runJSON parses JSON output and formats results.
+// When detail is true, uses the per-package FormatDetail output;
+// otherwise uses the compact Format output.
+func runJSON(w io.Writer, result *runner.Result, detail bool, flags []string) error {
 	results, parseErr := testjson.Parse(result.Stdout)
 	waitErr := result.Wait()
 
@@ -116,7 +122,11 @@ func runJSON(w io.Writer, result *runner.Result, flags []string) error {
 		return fmt.Errorf("failed to parse test output: %w", parseErr)
 	}
 
-	_, _ = fmt.Fprint(w, formatter.Format(results, flags))
+	if detail {
+		_, _ = fmt.Fprint(w, formatter.FormatDetail(results))
+	} else {
+		_, _ = fmt.Fprint(w, formatter.Format(results, flags))
+	}
 
 	if formatter.HasFailures(results) {
 		return cli.Exit("", 1)
