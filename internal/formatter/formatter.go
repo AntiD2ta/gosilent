@@ -7,9 +7,85 @@ import (
 	"github.com/AntiD2ta/gosilent/internal/testjson"
 )
 
-// Format renders package results as compact text output.
-// When there are multiple packages, a summary line is appended.
+// compactStats holds aggregated statistics for the compact formatter.
+type compactStats struct {
+	totalTests   int
+	totalElapsed float64
+	failedPkgs   []*testjson.PackageResult
+}
+
+func aggregateStats(results []*testjson.PackageResult) compactStats {
+	var s compactStats
+	for _, pkg := range results {
+		if pkg.NoTestFiles {
+			continue
+		}
+		s.totalTests += pkg.TotalCount()
+		s.totalElapsed += pkg.Elapsed
+		if pkg.PackageAction == testjson.ActionFail {
+			s.failedPkgs = append(s.failedPkgs, pkg)
+		}
+	}
+	return s
+}
+
+// Format renders results as ultra-compact output: a single line on success,
+// failure details only on failure.
 func Format(results []*testjson.PackageResult) string {
+	s := aggregateStats(results)
+
+	if len(s.failedPkgs) == 0 {
+		return fmt.Sprintf("ok  all packages (%d tests, %.2fs)\n", s.totalTests, s.totalElapsed)
+	}
+
+	var b strings.Builder
+	for _, pkg := range s.failedPkgs {
+		formatFailedPackageCompact(&b, pkg)
+	}
+
+	passedPkgs := len(results) - len(s.failedPkgs)
+	// Subtract NoTestFiles packages from passed count.
+	for _, pkg := range results {
+		if pkg.NoTestFiles {
+			passedPkgs--
+		}
+	}
+	var parts []string
+	parts = append(parts, fmt.Sprintf("%d failed", len(s.failedPkgs)))
+	if passedPkgs > 0 {
+		parts = append(parts, fmt.Sprintf("%d passed", passedPkgs))
+	}
+	_, _ = fmt.Fprintf(&b, "%s (%d tests, %.2fs)\n",
+		strings.Join(parts, ", "), s.totalTests, s.totalElapsed)
+
+	return b.String()
+}
+
+func formatFailedPackageCompact(b *strings.Builder, pkg *testjson.PackageResult) {
+	if pkg.BuildFailed {
+		_, _ = fmt.Fprintf(b, "FAIL  %s [build failed]\n", pkg.Package)
+		for _, line := range pkg.Output {
+			_, _ = fmt.Fprintf(b, "  %s", line)
+		}
+		b.WriteByte('\n')
+		return
+	}
+
+	_, _ = fmt.Fprintf(b, "FAIL  %s\n", pkg.Package)
+	for _, t := range pkg.FailedTests() {
+		_, _ = fmt.Fprintf(b, "  %s\n", t.Name)
+		for _, line := range t.Output {
+			if !isBoilerplate(line) {
+				b.WriteString(line)
+			}
+		}
+	}
+	b.WriteByte('\n')
+}
+
+// FormatDetail renders package results with per-package detail lines.
+// When there are multiple packages, a summary line is appended.
+func FormatDetail(results []*testjson.PackageResult) string {
 	var b strings.Builder
 	for _, pkg := range results {
 		formatPackage(&b, pkg)
@@ -48,10 +124,10 @@ func formatSummary(b *strings.Builder, results []*testjson.PackageResult) {
 	fmt.Fprintf(b, "%s (%.2fs)\n", strings.Join(parts, ", "), totalElapsed)
 }
 
-// HasFailures reports whether any package has test failures or build failures.
+// HasFailures reports whether any package failed (test failures or build failures).
 func HasFailures(results []*testjson.PackageResult) bool {
 	for _, pkg := range results {
-		if pkg.BuildFailed || pkg.FailCount() > 0 {
+		if pkg.PackageAction == testjson.ActionFail {
 			return true
 		}
 	}
