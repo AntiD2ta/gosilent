@@ -79,10 +79,10 @@ func TestE2E_PassingPackage(t *testing.T) {
 	stdout, exitCode := runGosilent(t, fixtureDir("passing"), "test", "./...")
 
 	require.Equal(t, 0, exitCode, "exit code should be 0 for passing tests")
-	require.Contains(t, stdout, "PASS example.com/passing")
-	require.Contains(t, stdout, "2/2")
+	require.Contains(t, stdout, "ok  passing")
+	require.Contains(t, stdout, "2 tests")
 	require.NotContains(t, stdout, "FAIL")
-	// Should be a single line (no failure details, no summary for single package).
+	// Should be a single line (compact format).
 	lines := strings.Split(strings.TrimSpace(stdout), "\n")
 	require.Len(t, lines, 1, "single passing package should produce exactly one line")
 }
@@ -91,27 +91,31 @@ func TestE2E_FailingPackage(t *testing.T) {
 	stdout, exitCode := runGosilent(t, fixtureDir("failing"), "test", "./...")
 
 	require.Equal(t, 1, exitCode, "exit code should be 1 for failing tests")
-	require.Contains(t, stdout, "FAIL example.com/failing")
-	require.Contains(t, stdout, "1/2", "should show 1 pass out of 2 total")
-	require.Contains(t, stdout, "FAIL TestDoubleBroken")
+	require.Contains(t, stdout, "FAIL  example.com/failing")
+	require.Contains(t, stdout, "TestDoubleBroken")
 	require.Contains(t, stdout, "Double(5) = 10, want 99", "should include assertion message")
+	require.Contains(t, stdout, "1 failed")
 }
 
 func TestE2E_BuildBroken(t *testing.T) {
 	stdout, exitCode := runGosilent(t, fixtureDir("buildbroken"), "test", "./...")
 
 	require.Equal(t, 1, exitCode, "exit code should be 1 for build failures")
-	require.Contains(t, stdout, "FAIL example.com/buildbroken [build failed]")
+	require.Contains(t, stdout, "FAIL  example.com/buildbroken [build failed]")
 	require.Contains(t, stdout, "undefined: DoesNotExist", "should include compiler error")
+	require.Contains(t, stdout, "1 failed")
 }
 
 func TestE2E_WithSkips(t *testing.T) {
 	stdout, exitCode := runGosilent(t, fixtureDir("withskips"), "test", "./...")
 
 	require.Equal(t, 0, exitCode, "exit code should be 0 when tests pass with skips")
-	require.Contains(t, stdout, "PASS example.com/withskips")
-	require.Contains(t, stdout, "1/3", "should show 1 pass out of 3 total")
-	require.Contains(t, stdout, "(2 skipped)")
+	require.Contains(t, stdout, "ok  withskips")
+	require.Contains(t, stdout, "3 tests")
+	require.NotContains(t, stdout, "skipped", "compact mode should not mention skips")
+	// Should be a single line (compact format).
+	lines := strings.Split(strings.TrimSpace(stdout), "\n")
+	require.Len(t, lines, 1, "passing package with skips should produce exactly one line")
 }
 
 func TestE2E_VerboseMode(t *testing.T) {
@@ -130,7 +134,34 @@ func TestE2E_SelfTest(t *testing.T) {
 
 	require.Equal(t, 0, exitCode, "gosilent's own tests should pass")
 
-	// Verify structural properties — not exact counts or timing.
+	// Compact format: single line for the entire suite.
+	require.Contains(t, stdout, "ok  all packages")
+	require.Regexp(t, regexp.MustCompile(`\d+ tests`), stdout, "should show total test count")
+	lines := strings.Split(strings.TrimSpace(stdout), "\n")
+	require.Len(t, lines, 1, "compact output should be exactly one line")
+
+	// No FAIL, no per-package names.
+	require.NotContains(t, stdout, "FAIL")
+	require.NotContains(t, stdout, "github.com/AntiD2ta/gosilent")
+}
+
+func TestE2E_DetailMode(t *testing.T) {
+	stdout, exitCode := runGosilent(t, fixtureDir("passing"), "test", "--detail", "./...")
+
+	require.Equal(t, 0, exitCode, "exit code should be 0 for passing tests in detail mode")
+	// Detail mode restores the old per-package format.
+	require.Contains(t, stdout, "PASS example.com/passing")
+	require.Contains(t, stdout, "2/2")
+	// Should NOT contain compact format markers.
+	require.NotContains(t, stdout, "ok  passing")
+}
+
+func TestE2E_SelfTest_Detail(t *testing.T) {
+	stdout, exitCode := runGosilent(t, projectRoot(), "test", "--detail", "./...")
+
+	require.Equal(t, 0, exitCode, "gosilent's own tests should pass in detail mode")
+
+	// Detail mode shows each package individually.
 	knownPackages := []string{
 		"github.com/AntiD2ta/gosilent/internal/cli",
 		"github.com/AntiD2ta/gosilent/internal/formatter",
@@ -140,14 +171,9 @@ func TestE2E_SelfTest(t *testing.T) {
 		"github.com/AntiD2ta/gosilent/e2e",
 	}
 	for _, pkg := range knownPackages {
-		require.Contains(t, stdout, pkg, "output should include package %s", pkg)
+		require.Contains(t, stdout, pkg, "detail output should include package %s", pkg)
 	}
 
-	// No FAIL lines.
-	for line := range strings.SplitSeq(stdout, "\n") {
-		require.False(t, strings.HasPrefix(line, "FAIL"), "should have no FAIL lines, got: %s", line)
-	}
-
-	// Summary line should match the expected format (multiple packages → summary).
+	// Summary line with passed count (multiple packages → summary).
 	require.Regexp(t, regexp.MustCompile(`\d+ passed.*\(\d+\.\d+s\)`), stdout, "should have a summary line")
 }
