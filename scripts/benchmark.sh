@@ -2,7 +2,7 @@
 #
 # gosilent benchmark script
 #
-# Compares token efficiency of gosilent vs go test and go test -v
+# Compares token efficiency of gosilent vs go test
 # against well-known Go projects at pinned versions.
 #
 # Usage:
@@ -29,6 +29,11 @@ declare -A PROJECTS=(
     [tidwall/gjson]="v1.18.0"
     [go-chi/chi]="v5.2.5"
     [stretchr/testify]="v1.11.1"
+    [prometheus/prometheus]="v3.9.1"
+    [etcd-io/etcd]="v3.6.8"
+    [cockroachdb/pebble]="v2.1.4"
+    [kubernetes/client-go]="v0.35.1"
+    [kubernetes/api]="v0.35.1"
 )
 
 # Order matters for consistent output
@@ -38,6 +43,11 @@ PROJECT_ORDER=(
     "tidwall/gjson"
     "go-chi/chi"
     "stretchr/testify"
+    "prometheus/prometheus"
+    "etcd-io/etcd"
+    "cockroachdb/pebble"
+    "kubernetes/client-go"
+    "kubernetes/api"
 )
 
 BENCH_DIR="${BENCH_DIR:-/tmp/gosilent-bench}"
@@ -45,6 +55,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKIP_CLONE=false
 CHARS_PER_TOKEN=4  # Conservative estimate for LLM token counting
+GO_TEST_TIMEOUT="10m"  # go test -timeout value
 
 # ─── Argument parsing ───────────────────────────────────────────────
 for arg in "$@"; do
@@ -97,23 +108,10 @@ benchmark_project() {
     log "Benchmarking $repo"
 
     # go test (non-verbose)
-    (cd "$dir" && go test ./... > "${prefix}-gotest.txt" 2>&1) || true
-
-    # go test -v (verbose)
-    (cd "$dir" && go test -v ./... > "${prefix}-gotest-v.txt" 2>&1) || true
+    (cd "$dir" && go test -short -timeout "$GO_TEST_TIMEOUT" ./... > "${prefix}-gotest.txt" 2>&1) || true
 
     # gosilent test
-    (cd "$dir" && "$BENCH_DIR/gosilent" test ./... > "${prefix}-gosilent.txt" 2>&1) || true
-}
-
-# Get character count for a file
-chars() {
-    wc -c < "$1" | tr -d ' '
-}
-
-# Get line count for a file
-lines() {
-    wc -l < "$1" | tr -d ' '
+    (cd "$dir" && "$BENCH_DIR/gosilent" test -short -timeout "$GO_TEST_TIMEOUT" ./... > "${prefix}-gosilent.txt" 2>&1) || true
 }
 
 # ─── Main ───────────────────────────────────────────────────────────
@@ -133,11 +131,25 @@ else
     log "Skipping clone (--skip-clone)"
 fi
 
+# Record commit hashes for reproducibility
+log "Recording commit hashes"
+: > "$BENCH_DIR/commits.txt"
+for repo in "${PROJECT_ORDER[@]}"; do
+    name="$(basename "$repo")"
+    dir="$BENCH_DIR/$name"
+    if [ -d "$dir/.git" ]; then
+        hash=$(git -C "$dir" rev-parse HEAD 2>/dev/null)
+        echo "$repo ${PROJECTS[$repo]} $hash" >> "$BENCH_DIR/commits.txt"
+    fi
+done
+# Record gosilent's own commit
+gosilent_hash=$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null)
+echo "gosilent (self) dev $gosilent_hash" >> "$BENCH_DIR/commits.txt"
+
 # Also benchmark gosilent itself
 log "Benchmarking gosilent (self)"
-(cd "$PROJECT_ROOT" && go test ./... > "$BENCH_DIR/gosilent-self-gotest.txt" 2>&1) || true
-(cd "$PROJECT_ROOT" && go test -v ./... > "$BENCH_DIR/gosilent-self-gotest-v.txt" 2>&1) || true
-(cd "$PROJECT_ROOT" && "$BENCH_DIR/gosilent" test ./... > "$BENCH_DIR/gosilent-self-gosilent.txt" 2>&1) || true
+(cd "$PROJECT_ROOT" && go test -short -timeout "$GO_TEST_TIMEOUT" ./... > "$BENCH_DIR/gosilent-self-gotest.txt" 2>&1) || true
+(cd "$PROJECT_ROOT" && "$BENCH_DIR/gosilent" test -short -timeout "$GO_TEST_TIMEOUT" ./... > "$BENCH_DIR/gosilent-self-gosilent.txt" 2>&1) || true
 
 # Run benchmarks
 for repo in "${PROJECT_ORDER[@]}"; do
@@ -150,19 +162,24 @@ log "Generating report"
 echo ""
 
 python3 << 'PYEOF'
-import math, os, sys
+import math, os
 
 BENCH_DIR = os.environ.get("BENCH_DIR", "/tmp/gosilent-bench")
 CHARS_PER_TOKEN = 4
 
 # Project data: (display_name, file_prefix)
 projects = [
-    ("gorilla/mux",    "mux"),
-    ("spf13/cobra",    "cobra"),
-    ("tidwall/gjson",  "gjson"),
-    ("go-chi/chi",     "chi"),
-    ("stretchr/testify", "testify"),
-    ("gosilent (self)", "gosilent-self"),
+    ("gorilla/mux",         "mux"),
+    ("spf13/cobra",         "cobra"),
+    ("tidwall/gjson",       "gjson"),
+    ("go-chi/chi",          "chi"),
+    ("stretchr/testify",    "testify"),
+    ("prometheus/prometheus","prometheus"),
+    ("etcd-io/etcd",        "etcd"),
+    ("cockroachdb/pebble",  "pebble"),
+    ("kubernetes/client-go","client-go"),
+    ("kubernetes/api",      "api"),
+    ("gosilent (self)",     "gosilent-self"),
 ]
 
 def file_chars(path):
@@ -185,17 +202,15 @@ def tokens(chars):
 data = []
 for name, prefix in projects:
     gt = file_chars(f"{BENCH_DIR}/{prefix}-gotest.txt")
-    gtv = file_chars(f"{BENCH_DIR}/{prefix}-gotest-v.txt")
     gs = file_chars(f"{BENCH_DIR}/{prefix}-gosilent.txt")
     gt_lines = file_lines(f"{BENCH_DIR}/{prefix}-gotest.txt")
-    gtv_lines = file_lines(f"{BENCH_DIR}/{prefix}-gotest-v.txt")
     gs_lines = file_lines(f"{BENCH_DIR}/{prefix}-gosilent.txt")
-    data.append((name, gt, gtv, gs, gt_lines, gtv_lines, gs_lines))
+    data.append((name, gt, gs, gt_lines, gs_lines))
 
 # Header
-print("=" * 96)
+print("=" * 80)
 print("GOSILENT BENCHMARK REPORT")
-print("=" * 96)
+print("=" * 80)
 print()
 print(f"Token estimate: ~{CHARS_PER_TOKEN} chars/token (conservative for code output)")
 go_ver = os.popen("go version").read().strip()
@@ -203,65 +218,83 @@ print(f"Go: {go_ver}")
 print()
 
 # Token table
-print("TOKEN COMPARISON")
-print("-" * 96)
-hdr = f"{'Project':<22} │ {'go test':>10} {'go test -v':>12} {'gosilent':>10} │ {'vs -v':>8} {'Ratio':>8}"
+print("TOKEN COMPARISON: gosilent vs go test")
+print("-" * 80)
+hdr = f"{'Project':<26} │ {'go test':>10} {'gosilent':>10} │ {'Saved':>10} {'Ratio':>8}"
 print(hdr)
-print("─" * 22 + "─┼─" + "─" * 10 + "─" * 13 + "─" * 11 + "─┼─" + "─" * 8 + "─" * 9)
+print("─" * 26 + "─┼─" + "─" * 10 + "─" * 11 + "─┼─" + "─" * 10 + "─" * 9)
 
-total_gt = total_gtv = total_gs = 0
-pass_gtv = pass_gs = 0
+total_gt = total_gs = 0
 
-for name, gt, gtv, gs, *_ in data:
-    gt_t = tokens(gt); gtv_t = tokens(gtv); gs_t = tokens(gs)
-    total_gt += gt_t; total_gtv += gtv_t; total_gs += gs_t
+for name, gt, gs, gt_l, gs_l in data:
+    if gt == 0 and gs == 0:
+        continue
+    gt_t = tokens(gt); gs_t = tokens(gs)
+    total_gt += gt_t; total_gs += gs_t
 
-    if "testify" not in name:
-        pass_gtv += gtv_t; pass_gs += gs_t
+    saved = gt_t - gs_t
+    saved_str = f"-{saved}" if saved > 0 else f"+{-saved}"
+    ratio = f"{gt_t/gs_t:.1f}x" if gs_t > 0 else "N/A"
+    print(f"{name:<26} │ {gt_t:>10,} {gs_t:>10,} │ {saved_str:>10} {ratio:>8}")
 
-    pct = f"{(1 - gs_t/gtv_t)*100:.1f}%" if gtv_t > 0 else "N/A"
-    ratio = f"{gtv_t/gs_t:.0f}x" if gs_t > 0 else "N/A"
-    print(f"{name:<22} │ {gt_t:>10,} {gtv_t:>12,} {gs_t:>10,} │ {pct:>8} {ratio:>8}")
-
-print("─" * 22 + "─┼─" + "─" * 10 + "─" * 13 + "─" * 11 + "─┼─" + "─" * 8 + "─" * 9)
-pct = f"{(1 - total_gs/total_gtv)*100:.1f}%" if total_gtv > 0 else "N/A"
-ratio = f"{total_gtv/total_gs:.0f}x" if total_gs > 0 else "N/A"
-print(f"{'TOTAL':<22} │ {total_gt:>10,} {total_gtv:>12,} {total_gs:>10,} │ {pct:>8} {ratio:>8}")
+print("─" * 26 + "─┼─" + "─" * 10 + "─" * 11 + "─┼─" + "─" * 10 + "─" * 9)
+total_saved = total_gt - total_gs
+ratio = f"{total_gt/total_gs:.1f}x" if total_gs > 0 else "N/A"
+print(f"{'TOTAL':<26} │ {total_gt:>10,} {total_gs:>10,} │ {f'-{total_saved}':>10} {ratio:>8}")
 print()
 
 # Lines table
 print("OUTPUT LINES COMPARISON")
-print("-" * 96)
-hdr = f"{'Project':<22} │ {'go test':>10} {'go test -v':>12} {'gosilent':>10} │ {'vs -v':>12}"
+print("-" * 80)
+hdr = f"{'Project':<26} │ {'go test':>10} {'gosilent':>10} │ {'Reduction':>12}"
 print(hdr)
-print("─" * 22 + "─┼─" + "─" * 10 + "─" * 13 + "─" * 11 + "─┼─" + "─" * 12)
+print("─" * 26 + "─┼─" + "─" * 10 + "─" * 11 + "─┼─" + "─" * 12)
 
-for name, gt, gtv, gs, gt_l, gtv_l, gs_l in data:
-    pct = f"{(1 - gs_l/gtv_l)*100:.0f}% fewer" if gtv_l > 0 else "N/A"
-    print(f"{name:<22} │ {gt_l:>10,} {gtv_l:>12,} {gs_l:>10,} │ {pct:>12}")
+for name, gt, gs, gt_l, gs_l in data:
+    if gt == 0 and gs == 0:
+        continue
+    if gt_l > 0:
+        pct = f"{(1 - gs_l/gt_l)*100:.0f}% fewer" if gs_l < gt_l else "same"
+    else:
+        pct = "N/A"
+    print(f"{name:<26} │ {gt_l:>10,} {gs_l:>10,} │ {pct:>12}")
 
 print()
 
 # Summary
 print("SUMMARY")
-print("-" * 96)
-if pass_gs > 0:
-    print(f"Passing suites:  gosilent uses {(1 - pass_gs/pass_gtv)*100:.1f}% fewer tokens than go test -v ({pass_gtv:,} → {pass_gs:,})")
+print("-" * 80)
 if total_gs > 0:
-    print(f"All projects:    gosilent uses {(1 - total_gs/total_gtv)*100:.1f}% fewer tokens than go test -v ({total_gtv:,} → {total_gs:,})")
+    pct = (1 - total_gs/total_gt)*100
+    print(f"gosilent uses {pct:.1f}% fewer tokens than go test ({total_gt:,} → {total_gs:,})")
 print()
 
 # Raw chars for reference
 print("RAW CHARACTER COUNTS")
-print("-" * 96)
-hdr = f"{'Project':<22} │ {'go test':>12} {'go test -v':>14} {'gosilent':>12}"
+print("-" * 80)
+hdr = f"{'Project':<26} │ {'go test':>12} {'gosilent':>12}"
 print(hdr)
-print("─" * 22 + "─┼─" + "─" * 12 + "─" * 15 + "─" * 13)
-for name, gt, gtv, gs, *_ in data:
-    print(f"{name:<22} │ {gt:>12,} {gtv:>14,} {gs:>12,}")
+print("─" * 26 + "─┼─" + "─" * 12 + "─" * 13)
+for name, gt, gs, *_ in data:
+    if gt == 0 and gs == 0:
+        continue
+    print(f"{name:<26} │ {gt:>12,} {gs:>12,}")
+
+# Commit hashes
+commits_path = f"{BENCH_DIR}/commits.txt"
+if os.path.exists(commits_path):
+    print()
+    print("COMMIT REFERENCES")
+    print("-" * 80)
+    with open(commits_path) as f:
+        for line in f:
+            parts = line.strip().split(" ", 2)
+            if len(parts) == 3:
+                repo, version, sha = parts
+                print(f"{repo:<26} {version:<14} {sha}")
 
 print()
-print("=" * 96)
+print("=" * 80)
 print(f"Raw data saved to: {BENCH_DIR}/")
-print("=" * 96)
+print("=" * 80)
 PYEOF

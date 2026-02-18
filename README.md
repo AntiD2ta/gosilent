@@ -118,15 +118,17 @@ Everything else passes through to `go test` unchanged.
 
 ## Benchmarks
 
-gosilent vs `go test` on popular open-source projects (all tests passing):
+gosilent vs `go test` on open-source projects (tokens at ~4 chars/token):
 
 | Project | `go test` | `gosilent` | Ratio |
 |---------|----------:|-----------:|------:|
-| gorilla/mux (273 tests) | 9 tokens | 7 tokens | 1.3x |
-| spf13/cobra (402 tests) | 19 tokens | 9 tokens | 2.1x |
-| go-chi/chi (143 tests) | 22 tokens | 10 tokens | 2.2x |
-| stretchr/testify (739 tests) | 103 tokens | 9 tokens | 11.4x |
-| gosilent (91 tests, 7 pkgs) | 101 tokens | 9 tokens | 11.2x |
+| cockroachdb/pebble (11,561 tests) | 34,783 tokens | 12 tokens | **2,899x** |
+| kubernetes/client-go (1,872 tests) | 6,222 tokens | 12 tokens | **519x** |
+| prometheus/prometheus (9,413 tests) | 9,774 tokens | 37 tokens | **264x** |
+| kubernetes/api (1,812 tests) | 735 tokens | 11 tokens | **67x** |
+| stretchr/testify (739 tests) | 103 tokens | 11 tokens | **9x** |
+
+**Total across 11 projects: 51,952 → 145 tokens (358x reduction).**
 
 Reproduce with `./scripts/benchmark.sh`.
 
