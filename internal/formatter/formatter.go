@@ -12,6 +12,7 @@ import (
 type compactStats struct {
 	totalTests   int
 	totalElapsed float64
+	passedPkgs   int
 	failedPkgs   []*testjson.PackageResult
 }
 
@@ -25,6 +26,8 @@ func aggregateStats(results []*testjson.PackageResult) compactStats {
 		s.totalElapsed += pkg.Elapsed
 		if pkg.PackageAction == testjson.ActionFail {
 			s.failedPkgs = append(s.failedPkgs, pkg)
+		} else {
+			s.passedPkgs++
 		}
 	}
 	return s
@@ -68,17 +71,10 @@ func Format(results []*testjson.PackageResult, flags []string) string {
 		formatFailedPackageCompact(&b, pkg)
 	}
 
-	passedPkgs := len(results) - len(s.failedPkgs)
-	// Subtract NoTestFiles packages from passed count.
-	for _, pkg := range results {
-		if pkg.NoTestFiles {
-			passedPkgs--
-		}
-	}
 	var parts []string
 	parts = append(parts, fmt.Sprintf("%d failed", len(s.failedPkgs)))
-	if passedPkgs > 0 {
-		parts = append(parts, fmt.Sprintf("%d passed", passedPkgs))
+	if s.passedPkgs > 0 {
+		parts = append(parts, fmt.Sprintf("%d passed", s.passedPkgs))
 	}
 	_, _ = fmt.Fprintf(&b, "%s%s (%d tests, %.2fs)\n",
 		strings.Join(parts, ", "), flagsSuffix, s.totalTests, s.totalElapsed)
@@ -126,11 +122,11 @@ func formatSummary(b *strings.Builder, results []*testjson.PackageResult) {
 	var totalElapsed float64
 	for _, pkg := range results {
 		totalElapsed += pkg.Elapsed
-		switch {
-		case pkg.NoTestFiles:
-			skipped++
-		case pkg.BuildFailed || pkg.FailCount() > 0:
+		switch pkg.PackageAction {
+		case testjson.ActionFail:
 			failed++
+		case testjson.ActionSkip:
+			skipped++
 		default:
 			passed++
 		}

@@ -138,6 +138,16 @@ func Parse(r io.Reader) ([]*PackageResult, error) {
 
 		case ActionBuildOutput:
 			b.output = append(b.output, event.Output)
+
+		case ActionBuildFail:
+			// Intentionally no-op: Go 1.24+ emits build-fail after build-output,
+			// but always follows with a package-level fail event that triggers
+			// finalization. The build-fail event carries no additional data.
+
+		case ActionArtifacts:
+			// Intentionally no-op: Go 1.26+ emits artifacts events when tests
+			// call t.ArtifactDir() with -artifacts flag. The event carries a
+			// Path field (not in TestEvent) but no test result data.
 		}
 	}
 

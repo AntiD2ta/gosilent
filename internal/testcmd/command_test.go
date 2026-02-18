@@ -1,9 +1,13 @@
 package testcmd
 
 import (
+	"errors"
+	"fmt"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 )
 
 func TestBuildArgs(t *testing.T) {
@@ -121,6 +125,17 @@ func TestBuildArgs(t *testing.T) {
 			wantFlags: []string{"-race", "-short", "-tags integration"},
 		},
 		{
+			name:      "FlagCountSpaceNonDefault",
+			args:      []string{"-count", "5", "./..."},
+			wantArgs:  []string{"test", "-json", "-count", "5", "./..."},
+			wantFlags: []string{"-count 5"},
+		},
+		{
+			name:     "FlagCountSpaceDefault",
+			args:     []string{"-count", "1", "./..."},
+			wantArgs: []string{"test", "-json", "-count", "1", "./..."},
+		},
+		{
 			name:       "DetailMode",
 			args:       []string{"--detail", "./..."},
 			wantArgs:   []string{"test", "-json", "./..."},
@@ -149,6 +164,71 @@ func TestBuildArgs(t *testing.T) {
 			require.Equal(t, test.wantVerbose, gotVerbose)
 			require.Equal(t, test.wantDetail, gotDetail)
 			require.Equal(t, test.wantFlags, gotFlags)
+		})
+	}
+}
+
+// makeExitError runs a command that exits with the given code, returning the *exec.ExitError.
+func makeExitError(code int) error {
+	return exec.Command("sh", "-c", fmt.Sprintf("exit %d", code)).Run()
+}
+
+func TestResolveExit(t *testing.T) {
+	tests := []struct {
+		name         string
+		hasFailures  bool
+		waitErr      error
+		wantCode     int  // expected exit code; -1 means nil error expected
+		wantOtherErr bool // true if expecting a non-ExitCoder error
+	}{
+		{
+			name:        "FailuresDetected_NilWaitErr",
+			hasFailures: true,
+			waitErr:     nil,
+			wantCode:    1,
+		},
+		{
+			name:        "FailuresDetected_WithWaitErr",
+			hasFailures: true,
+			waitErr:     makeExitError(1),
+			wantCode:    1,
+		},
+		{
+			name:     "NoFailures_NilWaitErr",
+			waitErr:  nil,
+			wantCode: -1,
+		},
+		{
+			name:     "NoFailures_WaitExitError",
+			waitErr:  makeExitError(2),
+			wantCode: 2,
+		},
+		{
+			name:         "NoFailures_WaitOtherError",
+			waitErr:      errors.New("pipe broken"),
+			wantOtherErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := resolveExit(test.hasFailures, test.waitErr)
+
+			if test.wantCode == -1 {
+				require.NoError(t, err)
+				return
+			}
+			if test.wantOtherErr {
+				require.Error(t, err)
+				var exitCoder cli.ExitCoder
+				require.False(t, errors.As(err, &exitCoder), "expected non-ExitCoder error")
+				return
+			}
+
+			require.Error(t, err)
+			var exitCoder cli.ExitCoder
+			require.True(t, errors.As(err, &exitCoder), "expected ExitCoder")
+			require.Equal(t, test.wantCode, exitCoder.ExitCode())
 		})
 	}
 }

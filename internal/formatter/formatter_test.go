@@ -11,8 +11,9 @@ import (
 func TestFormat_SinglePass(t *testing.T) {
 	results := []*testjson.PackageResult{
 		{
-			Package: "example.com/foo",
-			Elapsed: 3.46,
+			Package:       "example.com/foo",
+			Elapsed:       3.46,
+			PackageAction: testjson.ActionPass,
 			Tests: []*testjson.TestResult{
 				{Name: "TestOne", Status: testjson.StatusPass},
 				{Name: "TestTwo", Status: testjson.StatusPass},
@@ -27,8 +28,9 @@ func TestFormat_SinglePass(t *testing.T) {
 func TestFormat_PassWithSkips(t *testing.T) {
 	results := []*testjson.PackageResult{
 		{
-			Package: "example.com/foo",
-			Elapsed: 3.45,
+			Package:       "example.com/foo",
+			Elapsed:       3.45,
+			PackageAction: testjson.ActionPass,
 			Tests: []*testjson.TestResult{
 				{Name: "TestA", Status: testjson.StatusPass},
 				{Name: "TestB", Status: testjson.StatusPass},
@@ -44,8 +46,9 @@ func TestFormat_PassWithSkips(t *testing.T) {
 func TestFormat_Failure(t *testing.T) {
 	results := []*testjson.PackageResult{
 		{
-			Package: "example.com/bar",
-			Elapsed: 2.10,
+			Package:       "example.com/bar",
+			Elapsed:       2.10,
+			PackageAction: testjson.ActionFail,
 			Tests: []*testjson.TestResult{
 				{Name: "TestGood", Status: testjson.StatusPass},
 				{
@@ -73,8 +76,9 @@ func TestFormat_Failure(t *testing.T) {
 func TestFormat_BuildFailure(t *testing.T) {
 	results := []*testjson.PackageResult{
 		{
-			Package:     "example.com/broken",
-			BuildFailed: true,
+			Package:       "example.com/broken",
+			BuildFailed:   true,
+			PackageAction: testjson.ActionFail,
 			Output: []string{
 				"./foo.go:10:5: undefined: DoesNotExist\n",
 			},
@@ -91,8 +95,9 @@ func TestFormat_BuildFailure(t *testing.T) {
 func TestFormat_NoTestFiles(t *testing.T) {
 	results := []*testjson.PackageResult{
 		{
-			Package:     "example.com/notests",
-			NoTestFiles: true,
+			Package:       "example.com/notests",
+			NoTestFiles:   true,
+			PackageAction: testjson.ActionSkip,
 		},
 	}
 
@@ -103,16 +108,18 @@ func TestFormat_NoTestFiles(t *testing.T) {
 func TestFormat_MultiplePackages(t *testing.T) {
 	results := []*testjson.PackageResult{
 		{
-			Package: "example.com/a",
-			Elapsed: 1.50,
+			Package:       "example.com/a",
+			Elapsed:       1.50,
+			PackageAction: testjson.ActionPass,
 			Tests: []*testjson.TestResult{
 				{Name: "TestA1", Status: testjson.StatusPass},
 				{Name: "TestA2", Status: testjson.StatusPass},
 			},
 		},
 		{
-			Package: "example.com/b",
-			Elapsed: 2.10,
+			Package:       "example.com/b",
+			Elapsed:       2.10,
+			PackageAction: testjson.ActionFail,
 			Tests: []*testjson.TestResult{
 				{Name: "TestB1", Status: testjson.StatusPass},
 				{
@@ -127,12 +134,14 @@ func TestFormat_MultiplePackages(t *testing.T) {
 			},
 		},
 		{
-			Package:     "example.com/c",
-			NoTestFiles: true,
+			Package:       "example.com/c",
+			NoTestFiles:   true,
+			PackageAction: testjson.ActionSkip,
 		},
 		{
-			Package: "example.com/d",
-			Elapsed: 0.50,
+			Package:       "example.com/d",
+			Elapsed:       0.50,
+			PackageAction: testjson.ActionPass,
 			Tests: []*testjson.TestResult{
 				{Name: "TestD1", Status: testjson.StatusPass},
 			},
@@ -473,6 +482,16 @@ func TestHasFailures(t *testing.T) {
 			},
 			expected: false,
 		},
+		{
+			name:     "NilResults",
+			results:  nil,
+			expected: false,
+		},
+		{
+			name:     "EmptyResults",
+			results:  []*testjson.PackageResult{},
+			expected: false,
+		},
 	}
 
 	for _, test := range tests {
@@ -481,4 +500,73 @@ func TestHasFailures(t *testing.T) {
 			require.Equal(t, test.expected, got)
 		})
 	}
+}
+
+func TestFormat_EmptyResults_Compact(t *testing.T) {
+	got := formatter.Format(nil, nil)
+	require.Equal(t, "ok  all packages (0 tests, 0.00s)\n", got)
+
+	got = formatter.Format([]*testjson.PackageResult{}, nil)
+	require.Equal(t, "ok  all packages (0 tests, 0.00s)\n", got)
+}
+
+func TestFormatDetail_EmptyResults(t *testing.T) {
+	got := formatter.FormatDetail(nil)
+	require.Equal(t, "", got)
+
+	got = formatter.FormatDetail([]*testjson.PackageResult{})
+	require.Equal(t, "", got)
+}
+
+func TestFormat_MultipleFailures_Compact(t *testing.T) {
+	results := []*testjson.PackageResult{
+		{
+			Package:       "example.com/a",
+			Elapsed:       1.00,
+			PackageAction: testjson.ActionFail,
+			Tests: []*testjson.TestResult{
+				{
+					Name:   "TestA1",
+					Status: testjson.StatusFail,
+					Output: []string{
+						"    a_test.go:5: boom\n",
+					},
+				},
+			},
+		},
+		{
+			Package:       "example.com/b",
+			Elapsed:       2.00,
+			PackageAction: testjson.ActionFail,
+			Tests: []*testjson.TestResult{
+				{
+					Name:   "TestB1",
+					Status: testjson.StatusFail,
+					Output: []string{
+						"    b_test.go:5: crash\n",
+					},
+				},
+			},
+		},
+		{
+			Package:       "example.com/c",
+			Elapsed:       0.50,
+			PackageAction: testjson.ActionPass,
+			Tests: []*testjson.TestResult{
+				{Name: "TestC1", Status: testjson.StatusPass},
+			},
+		},
+	}
+
+	got := formatter.Format(results, nil)
+	expected := "FAIL  example.com/a\n" +
+		"  TestA1\n" +
+		"    a_test.go:5: boom\n" +
+		"\n" +
+		"FAIL  example.com/b\n" +
+		"  TestB1\n" +
+		"    b_test.go:5: crash\n" +
+		"\n" +
+		"2 failed, 1 passed (3 tests, 3.50s)\n"
+	require.Equal(t, expected, got)
 }

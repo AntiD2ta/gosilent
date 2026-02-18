@@ -13,6 +13,7 @@ const (
 	ActionCont        Action = "cont"
 	ActionBuildOutput Action = "build-output"
 	ActionBuildFail   Action = "build-fail"
+	ActionArtifacts   Action = "artifacts"
 )
 
 // TestEvent represents a single event from go test -json output.

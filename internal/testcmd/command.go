@@ -111,6 +111,23 @@ func runVerbose(w io.Writer, result *runner.Result) error {
 	return waitErr
 }
 
+// resolveExit determines the final error for runJSON based on parsed results
+// and process exit status. When the formatter detected failures, it returns
+// exit code 1. Otherwise, if go test exited non-zero (e.g., process killed
+// mid-stream), it propagates the exit code as a safety net.
+func resolveExit(hasFailures bool, waitErr error) error {
+	if hasFailures {
+		return cli.Exit("", 1)
+	}
+	if waitErr != nil {
+		if exitErr, ok := errors.AsType[*exec.ExitError](waitErr); ok {
+			return cli.Exit("", exitErr.ExitCode())
+		}
+		return waitErr
+	}
+	return nil
+}
+
 // runJSON parses JSON output and formats results.
 // When detail is true, uses the per-package FormatDetail output;
 // otherwise uses the compact Format output.
@@ -128,12 +145,5 @@ func runJSON(w io.Writer, result *runner.Result, detail bool, flags []string) er
 		_, _ = fmt.Fprint(w, formatter.Format(results, flags))
 	}
 
-	if formatter.HasFailures(results) {
-		return cli.Exit("", 1)
-	}
-
-	// Ignore waitErr when we have valid parsed results — go test returns
-	// non-zero on test failures, but we determine failure from parsed output.
-	_ = waitErr
-	return nil
+	return resolveExit(formatter.HasFailures(results), waitErr)
 }
