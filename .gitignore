@@ -33,10 +33,11 @@ go.work.sum
 
 INSIGHTS.md
 PLAN.md
+PLAN_2.md
 PROMPT.md
 
 # Built binary
-gosilent
+/gosilent
 
 .serena/
 BENCHMARK.md
