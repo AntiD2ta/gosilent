@@ -11,7 +11,7 @@ import (
 var version = "dev"
 
 func main() {
-	app := cli.NewApp(version)
+	app := cli.NewApp(cli.ResolveVersion(version))
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
